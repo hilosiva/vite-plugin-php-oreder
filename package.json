@@ -1,0 +1,33 @@
+{
+  "name": "@hilosiva/vite-plugin-php-oreder",
+  "description": "Orelop WPで利用するVite用のPHP Loader",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hilosiva/vite-plugin-php-oreder.git"
+  },
+  "author": "Shibata Hironori",
+  "devDependencies": {
+    "@types/node": "^20.3.1",
+    "chokidar": "^3.5.3",
+    "glob": "^10.2.7",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.9",
+    "vite-plugin-dts": "^2.3.0",
+    "vite-plugin-inspect": "^0.7.28"
+  }
+}
