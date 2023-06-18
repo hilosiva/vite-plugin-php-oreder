@@ -21,7 +21,7 @@ interface ReplaceFunc {
 // type ReplaceFunc = (content: string, replaces: Replace[] | Manifest) => string;
 export interface VitePhpHelperOptions {
   viteHelperFile?: string;
-  useOreopWp?: boolean;
+  reloadOnChange?: boolean;
 }
 
 export class VitePhpHelper {
@@ -62,7 +62,7 @@ export class VitePhpHelper {
 
     this.defaultOptions = {
       viteHelperFile: `lib/ViteHelper.php`,
-      useOreopWp: true,
+      reloadOnChange: true,
     };
 
     this.path = {
@@ -80,13 +80,13 @@ export class VitePhpHelper {
       port: 5173,
     };
 
-    this.devServer = { ...this.defaultDevServer, ...config.server };
+    this.devServer = this.deepMerge(this.defaultDevServer, config.server);
 
     this.localServer = new URL(`${this.devServer.https ? "https" : "http"}://${this.devServer.hmr.host}:${this.devServer.port}`);
 
     this.entryPoint = new URL(this.rollupOptions.input && this.rollupOptions.input.main ? this.rollupOptions.input.main.replace(config.root, "") : "assets/js/main.js", this.localServer);
 
-    this.options = { ...this.defaultOptions, ...options };
+    this.options = this.deepMerge(this.defaultOptions, options);
 
     this._setup();
   }
@@ -111,8 +111,6 @@ export class VitePhpHelper {
       fs.writeFileSync(output, modifiedContent);
     } catch (error) {
       return;
-      // console.error(`Failed to read file: ${output}`);
-      // console.error(error);
     }
   }
 
@@ -190,6 +188,10 @@ export class VitePhpHelper {
   }
 
   public liveReload(ws: any): void {
+    if (!this.options.reloadOnChange) {
+      return;
+    }
+
     this.ws = ws;
 
     chokidar.watch(`${this.path.root}/**/*.php`, { cwd: this.path.root, ignoreInitial: true }).on("add", this.reload.bind(this)).on("change", this.reload.bind(this));
@@ -202,5 +204,25 @@ export class VitePhpHelper {
       clear: true,
       timestamp: true,
     });
+  }
+
+  private deepMerge(target: any, source: any) {
+    if (typeof target !== "object" || typeof source !== "object") {
+      return source;
+    }
+
+    const keys = Object.keys(source);
+
+    for (const key of keys) {
+      if (!(key in target)) {
+        target[key] = source[key];
+      } else if (typeof target[key] === "object" && typeof source[key] === "object") {
+        target[key] = this.deepMerge(target[key], source[key]);
+      } else {
+        target[key] = source[key];
+      }
+    }
+
+    return target;
   }
 }
