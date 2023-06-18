@@ -1,7 +1,7 @@
 {
   "name": "@hilosiva/vite-plugin-php-oreder",
   "description": "Orelop WPで利用するVite用のPHP Loader",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
