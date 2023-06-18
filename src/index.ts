@@ -9,11 +9,12 @@ export function VitePhpLoader(options: VitePhpHelperOptions = {}): any {
 
     configResolved(_config: any) {
       config = _config;
+
       vitePhpHelper = new VitePhpHelper(options, config);
 
       vitePhpHelper.init();
     },
-    configureServer({ ws }) {
+    configureServer({ ws }: any) {
       vitePhpHelper.liveReload(ws);
     },
     async writeBundle() {

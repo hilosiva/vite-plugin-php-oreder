@@ -20,13 +20,33 @@ export default defineConfig({
       fileName: "index",
     },
     rollupOptions: {
-      external: ["vite", "path", "chokidar"], // バンドルしたくない依存関係を指定
+      external: [
+        "vite",
+        "glob",
+        "path",
+        "chokidar",
+        "fs",
+        "fs/promises",
+        "events",
+        "url",
+        "stream",
+        "string_decoder",
+        "vite-plugin-inspect", // 追加
+        // vite-plugin-dts の正しいモジュール名を指定する
+      ],
       output: {
         globals: {
           path: "path",
           chokidar: "chokidar",
           fs: "fs",
+          "fs/promises": "fs.promises",
           glob: "glob",
+          events: "events",
+          url: "url",
+          stream: "stream",
+          string_decoder: "string_decoder",
+          "vite-plugin-inspect": "vitePluginInspect", // 追加
+          // vite-plugin-dts のグローバル名を指定する
         },
       },
     },

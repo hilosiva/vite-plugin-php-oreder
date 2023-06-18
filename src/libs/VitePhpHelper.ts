@@ -15,28 +15,55 @@ interface Manifest {
   };
 }
 
+interface ReplaceFunc {
+  (content: string, replaces: Replace[] | Manifest): string;
+}
+// type ReplaceFunc = (content: string, replaces: Replace[] | Manifest) => string;
 export interface VitePhpHelperOptions {
   viteHelperFile?: string;
+  useOreopWp?: boolean;
 }
 
 export class VitePhpHelper {
   private files: string[];
+  private rollupOptions: any;
   private path: {
     root: string;
     relativeDist: string;
     absoluteDist: string;
   };
+  private defaultDevServer: {
+    https: boolean;
+    host: string;
+    hmr: {
+      host: string;
+    };
+    port: number;
+  };
+  private devServer: {
+    https: boolean;
+    host: string;
+    hmr: {
+      host: string;
+    };
+    port: number;
+  };
   private localServer: URL;
   private entryPoint: URL;
   private logger: any; // ロガーの型を適宜設定する
-  private defaultOptions = {
-    viteHelperFile: `lib/ViteHelper.php`,
-  };
+  private defaultOptions: VitePhpHelperOptions;
   private options: any; // オプションの型を適宜設定する
   private ws: any;
 
   constructor(options: any = {}, config: any) {
     this.files = glob.sync(`${config.root}/**/*.php`);
+    this.rollupOptions = config.build.rollupOptions;
+    this.logger = config.logger;
+
+    this.defaultOptions = {
+      viteHelperFile: `lib/ViteHelper.php`,
+      useOreopWp: true,
+    };
 
     this.path = {
       root: config.root,
@@ -44,54 +71,71 @@ export class VitePhpHelper {
       absoluteDist: path.resolve(config.root, config.build.outDir),
     };
 
-    this.localServer = new URL(`${config.server.https ? "https" : "http"}://${config.server.hmr.host}:${config.server.port}`);
-
-    this.entryPoint = new URL(config.build.rollupOptions.input.main.replace(config.root, ""), this.localServer);
-
-    this.logger = config.logger;
-
-    this.defaultOptions = {
-      viteHelperFile: `lib/ViteHelper.php`,
+    this.defaultDevServer = {
+      https: false,
+      host: "localhost",
+      hmr: {
+        host: "localhost",
+      },
+      port: 5173,
     };
 
+    this.devServer = { ...this.defaultDevServer, ...config.server };
+
+    this.localServer = new URL(`${this.devServer.https ? "https" : "http"}://${this.devServer.hmr.host}:${this.devServer.port}`);
+
+    this.entryPoint = new URL(this.rollupOptions.input && this.rollupOptions.input.main ? this.rollupOptions.input.main.replace(config.root, "") : "assets/js/main.js", this.localServer);
+
     this.options = { ...this.defaultOptions, ...options };
+
+    this._setup();
   }
 
-  private async modifiedFile(file: string, replaceFunc: (content: string, replaces: Replace[]) => string, replaces: Replace[], output: string) {
+  private _setup() {
+    try {
+      if (!this.rollupOptions || !this.rollupOptions.input || !this.rollupOptions.input.main) {
+        throw new Error("[vite-plugin-php-oreder] - rollupOptionsに「main」のエントリーポイントを指定してください");
+      }
+    } catch (e: any) {
+      console.error(e.message);
+    }
+  }
+
+  private async modifiedFile(file: string, replaceFunc: ReplaceFunc, replaces: Replace[] | Manifest, output: string) {
     try {
       const content = fs.readFileSync(file, "utf-8");
-
       const modifiedContent = replaceFunc(content, replaces);
 
       const distFileDirectory = output.split("/").slice(0, -1).join("/");
       fs.mkdirSync(distFileDirectory, { recursive: true });
       fs.writeFileSync(output, modifiedContent);
     } catch (error) {
-      console.error(`Failed to read file: ${output}`);
-      console.error(error);
+      return;
+      // console.error(`Failed to read file: ${output}`);
+      // console.error(error);
     }
   }
 
-  private replaceStrings(content: string, replaces: Replace[]): string {
+  private replaceStrings: ReplaceFunc = (content, replaces) => {
     let modifiedContent = content;
 
-    replaces.forEach((replace) => {
+    (replaces as Replace[]).forEach((replace) => {
       modifiedContent = modifiedContent.replace(replace.search, replace.new);
     });
 
     return modifiedContent;
-  }
+  };
 
-  private replaceImagePaths(content: string, manifest: Manifest): string {
+  private replaceImagePaths: ReplaceFunc = (content, replaces) => {
     let modifiedContent = content;
 
-    Object.keys(manifest).forEach((key) => {
-      const { file, src } = manifest[key];
+    Object.keys(replaces as Manifest).forEach((key) => {
+      const { file, src } = (replaces as Manifest)[key];
       modifiedContent = modifiedContent.replaceAll(new RegExp(src, "g"), file);
     });
 
     return modifiedContent;
-  }
+  };
 
   public async init(): Promise<void> {
     const file = `${this.path.root}/${this.options.viteHelperFile}`;
@@ -117,12 +161,16 @@ export class VitePhpHelper {
 
   private async changeManifestAssets(): Promise<void> {
     const manifestPath = `${this.path.absoluteDist}/manifest.json`;
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
 
-    this.files.forEach(async (file) => {
-      const output = file.replace(this.path.root, this.path.absoluteDist);
-      await this.modifiedFile(file, this.replaceImagePaths, manifest, output);
-    });
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+      this.files.forEach(async (file) => {
+        const output = file.replace(this.path.root, this.path.absoluteDist);
+        await this.modifiedFile(file, this.replaceImagePaths, manifest, output);
+      });
+    } catch (e: any) {
+      return;
+    }
   }
 
   private async changeDevelpmentMode(): Promise<void> {
