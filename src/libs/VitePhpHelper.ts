@@ -21,6 +21,7 @@ interface ReplaceFunc {
 // type ReplaceFunc = (content: string, replaces: Replace[] | Manifest) => string;
 export interface VitePhpHelperOptions {
   entryPoint?: string;
+  proxy?: string;
   viteHelperFile?: string;
   reloadOnChange?: boolean;
 }
@@ -141,11 +142,11 @@ export class VitePhpHelper {
 
     const replaces: Replace[] = [
       {
-        search: /const VITE_SERVER = '';/,
+        search: /const VITE_SERVER = '([^']*)';/,
         new: `const VITE_SERVER = '${this.localServer.origin}';`,
       },
       {
-        search: /const ENTRY_POINT = '';/,
+        search: /const ENTRY_POINT = '([^']*)';/,
         new: `const ENTRY_POINT = '${this.entryPoint.pathname.slice(1)}';`,
       },
     ];
