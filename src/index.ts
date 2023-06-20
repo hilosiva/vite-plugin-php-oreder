@@ -4,18 +4,41 @@ import path from "path";
 export function VitePhpLoader(options: VitePhpHelperOptions = {}): any {
   let config: any;
   let vitePhpHelper: VitePhpHelper;
-  const defaultEntryPoint = "assets/js/main.js";
+  const settings = {
+    entryPoint: options.entryPoint ? options.entryPoint : "assets/js/main.js",
+    proxy: {
+      target: options.proxy ? options.proxy : "http://localhost:80",
+      changeOrigin: true,
+      ws: true,
+    },
+  };
 
   return {
     name: "VitePhpOreder",
 
-    config: (config: any) => ({
+    config: (_config: any) => ({
       build: {
         emptyOutDir: true,
         manifest: true,
         rollupOptions: {
           input: {
-            main: path.resolve(options.entryPoint ? `${config.root}/${options.entryPoint}` : `${config.root}/${defaultEntryPoint}`),
+            main: path.resolve(`${_config.root}/${settings.entryPoint}`),
+          },
+        },
+      },
+      server: {
+        cors: true,
+        proxy: {
+          "^(?!/(assets|@vite|@fs)/|/[^/]+\\.(gif|jpeg|jpg|png|svg|webp|txt|pdf|mp4|webm|mov|htaccess)$)": {
+            ...settings.proxy,
+          },
+        },
+      },
+
+      preview: {
+        proxy: {
+          "/": {
+            ...settings.proxy,
           },
         },
       },

@@ -91,6 +91,13 @@ export default defineConfig({
 
 PHP ファイルに読み込ませるエントリーポイントとなる JS ファイルのパス
 
+### `proxy`
+
+- タイプ： String
+- デフォルト： `'http://localhost:80'`
+
+PHP が実行しているサーバー URL
+
 ### `viteHelperFile`
 
 - タイプ： String
