@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import Inspect from "vite-plugin-inspect";
 import dts from "vite-plugin-dts";
-import { VitePhpLoader } from "./src/index";
+// import { VitePhpLoader } from "./src/index";
 import path from "path";
 
 export default defineConfig({
@@ -11,7 +11,7 @@ export default defineConfig({
       outputDir: ".vite-inspect",
     }),
     dts({ insertTypesEntry: true }),
-    VitePhpLoader(),
+    // VitePhpLoader(),
   ],
   build: {
     lib: {
