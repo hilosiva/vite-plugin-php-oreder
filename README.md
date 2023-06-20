@@ -84,9 +84,23 @@ export default defineConfig({
 
 ## オプション
 
+### `entryPoint`
+
+- タイプ： String
+- デフォルト： `'assets/js/main.js'`
+
+PHP ファイルに読み込ませるエントリーポイントとなる JS ファイルのパス
+
 ### `viteHelperFile`
 
 - タイプ： String
 - デフォルト： `'lib/ViteHelper.php'`
 
 [Orelop WP](https://github.com/hilosiva/orelop-wp)のヘルパー用 PHP ファイルのファイルパス
+
+### `reloadOnChange`
+
+- タイプ： Boolean
+- デフォルト： true
+
+PHP ファイルの更新時にライブリロードを行うかどうか

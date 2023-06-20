@@ -20,6 +20,7 @@ interface ReplaceFunc {
 }
 // type ReplaceFunc = (content: string, replaces: Replace[] | Manifest) => string;
 export interface VitePhpHelperOptions {
+  entryPoint?: string;
   viteHelperFile?: string;
   reloadOnChange?: boolean;
 }
