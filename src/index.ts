@@ -1,7 +1,7 @@
 import { VitePhpHelper, VitePhpHelperOptions } from "./libs/VitePhpHelper";
 import path from "path";
 
-export function vitePhpLoader(options: VitePhpHelperOptions = {}): any {
+export function vitePhpOreder(options: VitePhpHelperOptions = {}): any {
   let config: any;
   let vitePhpHelper: VitePhpHelper;
   const settings = {

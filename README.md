@@ -70,12 +70,12 @@
 
 ```javascript
 import { defineConfig } from "vite";
-import { VitePhpOreder } from "@hilosiva/vite-plugin-php-oreder"; // 追加
+import { vitePhpOreder } from "@hilosiva/vite-plugin-php-oreder"; // 追加
 
 export default defineConfig({
   plugins: [
     // 追加
-    VitePhpOreder({
+    vitePhpOreder({
       /* オプション */
     }),
   ],
