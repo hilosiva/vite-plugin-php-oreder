@@ -2,6 +2,8 @@ import fs from "fs";
 import { glob } from "glob";
 import path from "path";
 import chokidar from "chokidar";
+import os from "os";
+import { execa } from "execa";
 
 interface Replace {
   search: RegExp;
@@ -24,6 +26,7 @@ export interface VitePhpHelperOptions {
   proxy?: string;
   viteHelperFile?: string;
   reloadOnChange?: boolean;
+  useWpEnv?: boolean;
 }
 
 export class VitePhpHelper {
@@ -34,22 +37,29 @@ export class VitePhpHelper {
     relativeDist: string;
     absoluteDist: string;
   };
-  private defaultDevServer: {
-    https: boolean;
-    host: string;
-    hmr: {
-      host: string;
-    };
-    port: number;
+
+  private mode: string;
+  private protocol: {
+    development: string;
+    production: string;
+    [key: string]: string;
   };
-  private devServer: {
-    https: boolean;
-    host: string;
-    hmr: {
-      host: string;
-    };
-    port: number;
+  private hosts: {
+    development: string;
+    production: string;
+    [key: string]: string;
   };
+  private ports: {
+    development: number;
+    production: number;
+    [key: string]: number;
+  };
+
+  private defaultHost: string;
+  private server: any;
+  private preview: any;
+  private inlineConfig: any;
+
   private localServer: URL;
   private entryPoint: URL;
   private logger: any; // ロガーの型を適宜設定する
@@ -65,6 +75,7 @@ export class VitePhpHelper {
     this.defaultOptions = {
       viteHelperFile: `lib/ViteHelper.php`,
       reloadOnChange: true,
+      useWpEnv: false,
     };
 
     this.path = {
@@ -73,18 +84,28 @@ export class VitePhpHelper {
       absoluteDist: path.resolve(config.root, config.build.outDir),
     };
 
-    this.defaultDevServer = {
-      https: false,
-      host: "localhost",
-      hmr: {
-        host: "localhost",
-      },
-      port: 5173,
+    this.mode = config.mode;
+
+    this.protocol = {
+      development: config.server.https || config.inlineConfig.https ? "https" : "http",
+      production: config.preview.https || (config.inlineConfig.preview && config.inlineConfig.preview.https) ? "https" : "http",
+    };
+    this.defaultHost = "localhost";
+
+    this.hosts = {
+      development: config.server.host || config.inlineConfig.host ? this._getLocalIPAddress() : this.defaultHost,
+      production: config.preview.host || (config.inlineConfig.preview && config.inlineConfig.preview.host) ? this._getLocalIPAddress() : this.defaultHost,
+    };
+    this.ports = {
+      development: config.inlineConfig.port ? config.inlineConfig.port : config.server.port ? config.server.port : 5173,
+      production: config.inlineConfig.preview && config.inlineConfig.preview.port ? config.inlineConfig.preview.port : config.preview.port ? config.preview.port : 4173,
     };
 
-    this.devServer = this.deepMerge(this.defaultDevServer, config.server);
+    this.server = config.server;
+    this.preview = config.preview;
+    this.inlineConfig = config.inlineConfig;
 
-    this.localServer = new URL(`${this.devServer.https ? "https" : "http"}://${this.devServer.hmr.host}:${this.devServer.port}`);
+    this.localServer = new URL(`${this.protocol[this.mode]}://${this.hosts[this.mode]}:${this.ports[this.mode]}`);
 
     this.entryPoint = new URL(this.rollupOptions.input && this.rollupOptions.input.main ? this.rollupOptions.input.main.replace(config.root, "") : "assets/js/main.js", this.localServer);
 
@@ -100,6 +121,30 @@ export class VitePhpHelper {
       }
     } catch (e: any) {
       console.error(e.message);
+    }
+  }
+
+  private _getLocalIPAddress() {
+    const interfaces = os.networkInterfaces();
+    for (const interfaceName in interfaces) {
+      const addresses = interfaces[interfaceName];
+      if (addresses) {
+        for (const address of addresses) {
+          if (address.family === "IPv4" && !address.internal) {
+            return address.address;
+          }
+        }
+      }
+    }
+    return "localhost";
+  }
+
+  private async runWPCLICommand(command: any, args: any) {
+    try {
+      const { stdout } = await execa("npx", ["wp-env", "run", "cli", "wp", command, ...args]);
+      console.log(stdout);
+    } catch (error) {
+      console.error(error);
     }
   }
 
@@ -138,6 +183,12 @@ export class VitePhpHelper {
   };
 
   public async init(): Promise<void> {
+    if (this.options.useWpEnv && this.hosts[this.mode] !== this.defaultHost) {
+      this.runWPCLICommand("config", ["set", "WP_HOME", this.localServer.origin, "--add"]);
+      this.runWPCLICommand("config", ["set", "WP_SITEURL", this.localServer.origin, "--add"]);
+      this.runWPCLICommand("config", ["set", "WP_CONTENT_URL", this.localServer.origin + "/wp-content", "--add"]);
+    }
+
     const file = `${this.path.root}/${this.options.viteHelperFile}`;
 
     const replaces: Replace[] = [
