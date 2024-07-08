@@ -5,11 +5,12 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "Vite",
+    "PHP"
   ],
   "license": "MIT",
   "scripts": {
@@ -19,6 +20,10 @@
     "type": "git",
     "url": "https://github.com/hilosiva/vite-plugin-php-oreder.git"
   },
+  "bugs": {
+    "url": "https://github.com/hilosiva/vite-plugin-php-oreder/issues"
+  },
+  "homepage": "https://github.com/hilosiva/vite-plugin-php-oreder",
   "author": "Shibata Hironori",
   "devDependencies": {
     "@types/node": "^20.3.1",
